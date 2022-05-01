@@ -1,0 +1,7 @@
+Practicum 2:
+Part 1
+```{r}
+library(XML)
+
+```
+
