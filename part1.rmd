@@ -7,7 +7,8 @@ knitr::include_graphics(img_url)
 ```{r}
 library(RSQLite)
 
-fpath = "D:/Northeastern/DBMS/practicum2/"
+#fpath = "D:/Northeastern/DBMS/practicum2/"
+fpath = "~/Desktop/CS5200/assignments/"
 dbfile = "part1.sqlite"
 
 dbcon <- dbConnect(RSQLite::SQLite(), paste0(fpath, dbfile))
@@ -55,7 +56,7 @@ FOREIGN KEY(articleId) REFERENCES Article(pmid));
 ```{r}
 library(XML)
 
-path <- "D:/Northeastern/DBMS/practicum2/"
+path <- "~/Desktop/CS5200/"
 fn <- "pubmed_sample.xml"
 fpn = paste0(path, fn)
 
@@ -66,22 +67,25 @@ abstract <- xpathSApply(xmlObj, "//Abstract")
 #abstract
 query <- "//Abstract"
 num_nodes <- xpathSApply(xmlObj, "count(//Abstract)")
+print(num_nodes)
 abs_list <- list()
 
 for(i in 1:num_nodes){
   comb_text <- ""
-  abt_len <- xpathSApply(abstract[[i]], "count(//AbstractText)")
-  abstract_text <- xpathSApply(abstract[[i]], "//AbstractText")
-  #print(abstract_text)
+  abt_len <- xpathSApply(abstract[[i]],"count(//AbstractText)")
+ # print(abt_len)
+  abstract_text <- xpathSApply(abstract[[i]],"//AbstractText")
+
+  print(abstract_text)
+  print("----------------------------------------")
   for(j in 1:abt_len){
-   #print(xmlValue(abstract_text[[j]])) 
-    comb_text<-cat(comb_text,xmlValue(abstract_text[[j]]))
+    comb_text<-paste(comb_text,xmlValue(abstract_text[[j]]))
   }
   abs_list <- append(abs_list, comb_text)
   #print(comb_text)
-  print(i)
+  #print(i)
 }
-print(length(abs_list))
-#type(abstract)
+print(abs_list[1])
+t#ype(abstract)
 ```
 
