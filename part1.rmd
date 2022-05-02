@@ -1,7 +1,87 @@
 Practicum 2:
 Part 1
 ```{r}
+img_url <- "https://i.imgur.com/BYvwDan.jpeg"
+knitr::include_graphics(img_url)
+```
+```{r}
+library(RSQLite)
+
+fpath = "D:/Northeastern/DBMS/practicum2/"
+dbfile = "part1.sqlite"
+
+dbcon <- dbConnect(RSQLite::SQLite(), paste0(fpath, dbfile))
+```
+```{sql connection=dbcon}
+PRAGMA foreign_keys = ON
+```
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS Article;
+```
+
+```{sql connection=dbcon}
+CREATE TABLE IF NOT EXISTS Article(
+PMID VARCHAR(20), 
+Title VARCHAR(255),
+dateCreated TEXT,
+issn VARCHAR(255),
+abstract TEXT,
+FOREIGN KEY(issn) REFERENCES Journal(issn));
+```
+```{sql connection=dbcon}
+CREATE TABLE IF NOT EXISTS Journal(
+issn VARCHAR(255) PRIMARY KEY,
+volume INT,
+issue INT,
+title VARCHAR(255),
+pubDate TEXT);
+```
+```{sql connection=dbcon}
+CREATE TABLE IF NOT EXISTS Author(
+id INT PRIMARY KEY,
+firstName VARCHAR(255),
+lastName VARCHAR(255),
+initials VARCHAR(5),
+affiliation VARCHAR(255));
+```
+```{sql connection=dbcon}
+CREATE TABLE IF NOT EXISTS AuthorList(
+id INT PRIMARY KEY,
+authorId INT,
+articleId VARCHAR(20),
+FOREIGN KEY(authorId) REFERENCES Author(id),
+FOREIGN KEY(articleId) REFERENCES Article(pmid));
+```
+```{r}
 library(XML)
 
+path <- "D:/Northeastern/DBMS/practicum2/"
+fn <- "pubmed_sample.xml"
+fpn = paste0(path, fn)
+
+xmlObj <- xmlParse(fpn)
+```
+```{r}
+abstract <- xpathSApply(xmlObj, "//Abstract")
+#abstract
+query <- "//Abstract"
+num_nodes <- xpathSApply(xmlObj, "count(//Abstract)")
+abs_list <- list()
+
+for(i in 1:num_nodes){
+  comb_text <- ""
+  abt_len <- xpathSApply(abstract[[i]], "count(//AbstractText)")
+  abstract_text <- xpathSApply(abstract[[i]], "//AbstractText")
+  #print(abstract_text)
+  for(j in 1:abt_len){
+   #print(xmlValue(abstract_text[[j]])) 
+    comb_text<-cat(comb_text,xmlValue(abstract_text[[j]]))
+  }
+  abs_list <- append(abs_list, comb_text)
+  #print(comb_text)
+  print(i)
+}
+print(length(abs_list))
+#type(abstract)
 ```
 
