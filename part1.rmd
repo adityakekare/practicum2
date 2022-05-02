@@ -41,7 +41,6 @@ issn VARCHAR(255),
 FOREIGN KEY(issn) REFERENCES Journal(issn));
 ```
 
-
 ```{sql connection=dbcon}
 CREATE TABLE IF NOT EXISTS Journal(
 issn VARCHAR(255) PRIMARY KEY,
@@ -50,7 +49,6 @@ issue INT,
 title VARCHAR(255),
 pubDate TEXT);
 ```
-
 
 ```{sql connection=dbcon}
 CREATE TABLE IF NOT EXISTS Author(
@@ -61,7 +59,6 @@ initials VARCHAR(5),
 affiliation VARCHAR(255));
 ```
 
-
 ```{sql connection=dbcon}
 CREATE TABLE IF NOT EXISTS AuthorList(
 id INT PRIMARY KEY,
@@ -70,7 +67,6 @@ articleId VARCHAR(20),
 FOREIGN KEY(authorId) REFERENCES Author(id),
 FOREIGN KEY(articleId) REFERENCES Article(pmid));
 ```
-
 
 ```{r}
 library(XML)
@@ -82,32 +78,62 @@ fpn = paste0(path, fn)
 xmlObj <- xmlParse(fpn)
 ```
 
-Author Table fill
+Article Dataframe fill
 ```{r}
-df <- data.frame(firstname=character(),
-                 lastname=character(),
-                 initials=character(),
-                 affilication=character(),
+article_df <- data.frame(PMID=character(),
+                 Title=character(),
+                 dateCreated=character(),
+                 issn=character(),
                  stringsAsFactors=FALSE)
-authors <- xpathSApply(xmlObj, "//Author")
-dd <- xpathSApply(xmlObj, "count(//LastName)")
-print(dd)
+articles <- xpathSApply(xmlObj, "//PubmedArticle")
 
-for(i in 1:length(authors)) {
-  q <- paste("//Author[",i,"]/LastName")
-  dd <- xpathSApply(xmlObj, "count(//LastName)")
-  node <- xmlNode(q)
-  xmlValue(node)
-  lastnames <- xmlValue(node, q)
-  print(length(lastnames))
-  #print(i)
-  #print(lastnames)
+for(i in 1:length(articles)) {
+  article_i <- xmlParseString(toString.XMLNode(articles[[i]]))
+  
+  pmid_i <- xpathSApply(article_i, "//MedlineCitation/PMID")
+  title_i <- xpathSApply(article_i, "//MedlineCitation/Article/ArticleTitle")
+  issn_i <- xpathSApply(article_i, "//MedlineCitation/Article/Journal/ISSN")
+  
+  xml_date_i <- xmlParseString(toString.XMLNode(xpathSApply(article_i, "//MedlineCitation/DateCreated")))
+  year_i <- xpathSApply(xml_date_i, "//Year")
+  month_i <- xpathSApply(xml_date_i, "//Month")
+  day_i <- xpathSApply(xml_date_i, "//Day")
+  
+  date_i <- paste(xmlValue(month_i), xmlValue(day_i), xmlValue(year_i), sep="-")
+  
+  article_df[nrow(article_df) + 1,] = c(xmlValue(pmid_i),xmlValue(title_i), date_i, xmlValue(issn_i))
 }
-# lastnames <- xpathSApply(xmlObj, "//Author/LastName")
-# initials <- xpathSApply(xmlObj, "count(//Author/Initials)")
-# affiliations <- xpathSApply(xmlObj, "count(//Author/Affiliation)")
-# print(initials)
-# print(affiliations)
+```
 
+
+Journal Dataframe fill
+```{r}
+journal_df <- data.frame(issn=character(),
+                 volume=integer(),
+                 issue=character(),
+                 title=character(),
+                 pubdate=character(),
+                 stringsAsFactors=FALSE)
+
+articles <- xpathSApply(xmlObj, "//PubmedArticle")
+
+for(i in 1:length(articles)) {
+  article_i <- xmlParseString(toString.XMLNode(articles[[i]]))
+  
+  issn_i <- xpathSApply(article_i, "//Article/Journal/ISSN")
+  title_i <- xpathSApply(article_i, "//Article/Journal/Title")
+  volume_i <- xpathSApply(article_i, "//Article/Journal/JournalIssue/Volume")
+  issue_i <- xpathSApply(article_i, "//Article/Journal/Issue")
+
+  xml_date_i <- xmlParseString(toString.XMLNode(xpathSApply(article_i, "//Article/Journal/PubDate")))
+  year_i <- xpathSApply(xml_date_i, "//Year")
+  month_i <- xpathSApply(xml_date_i, "//Month")
+  day_i <- xpathSApply(xml_date_i, "//Day")
+  date_i <- paste(xmlValue(month_i), xmlValue(day_i), xmlValue(year_i), sep="-")
+  
+  journal_df[nrow(journal_df) + 1,] = c(xmlValue(issn_i),xmlValue(volume_i), xmlValue(issue_i),  xmlValue(title_i), date_i)
+}
+journal_df <- unique(journal_df)
+print(journal_df)
 ```
 
