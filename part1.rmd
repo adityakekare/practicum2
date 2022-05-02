@@ -6,13 +6,13 @@ knitr::include_graphics(img_url)
 ```
 ```{r}
 library(RSQLite)
-
 #fpath = "D:/Northeastern/DBMS/practicum2/"
 fpath = "~/Desktop/CS5200/assignments/"
 dbfile = "part1.sqlite"
 
 dbcon <- dbConnect(RSQLite::SQLite(), paste0(fpath, dbfile))
 ```
+
 ```{sql connection=dbcon}
 PRAGMA foreign_keys = ON
 ```
@@ -21,14 +21,27 @@ DROP TABLE IF EXISTS Article;
 ```
 
 ```{sql connection=dbcon}
+DROP TABLE IF EXISTS Journal;
+```
+
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS Author;
+```
+
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS AuthorList;
+```
+
+```{sql connection=dbcon}
 CREATE TABLE IF NOT EXISTS Article(
 PMID VARCHAR(20), 
 Title VARCHAR(255),
 dateCreated TEXT,
 issn VARCHAR(255),
-abstract TEXT,
 FOREIGN KEY(issn) REFERENCES Journal(issn));
 ```
+
+
 ```{sql connection=dbcon}
 CREATE TABLE IF NOT EXISTS Journal(
 issn VARCHAR(255) PRIMARY KEY,
@@ -37,6 +50,8 @@ issue INT,
 title VARCHAR(255),
 pubDate TEXT);
 ```
+
+
 ```{sql connection=dbcon}
 CREATE TABLE IF NOT EXISTS Author(
 id INT PRIMARY KEY,
@@ -45,6 +60,8 @@ lastName VARCHAR(255),
 initials VARCHAR(5),
 affiliation VARCHAR(255));
 ```
+
+
 ```{sql connection=dbcon}
 CREATE TABLE IF NOT EXISTS AuthorList(
 id INT PRIMARY KEY,
@@ -53,6 +70,8 @@ articleId VARCHAR(20),
 FOREIGN KEY(authorId) REFERENCES Author(id),
 FOREIGN KEY(articleId) REFERENCES Article(pmid));
 ```
+
+
 ```{r}
 library(XML)
 
@@ -62,30 +81,33 @@ fpn = paste0(path, fn)
 
 xmlObj <- xmlParse(fpn)
 ```
+
+Author Table fill
 ```{r}
-abstract <- xpathSApply(xmlObj, "//Abstract")
-#abstract
-query <- "//Abstract"
-num_nodes <- xpathSApply(xmlObj, "count(//Abstract)")
-print(num_nodes)
-abs_list <- list()
+df <- data.frame(firstname=character(),
+                 lastname=character(),
+                 initials=character(),
+                 affilication=character(),
+                 stringsAsFactors=FALSE)
+authors <- xpathSApply(xmlObj, "//Author")
+dd <- xpathSApply(xmlObj, "count(//LastName)")
+print(dd)
 
-for(i in 1:num_nodes){
-  comb_text <- ""
-  abt_len <- xpathSApply(abstract[[i]],"count(//AbstractText)")
- # print(abt_len)
-  abstract_text <- xpathSApply(abstract[[i]],"//AbstractText")
-
-  print(abstract_text)
-  print("----------------------------------------")
-  for(j in 1:abt_len){
-    comb_text<-paste(comb_text,xmlValue(abstract_text[[j]]))
-  }
-  abs_list <- append(abs_list, comb_text)
-  #print(comb_text)
+for(i in 1:length(authors)) {
+  q <- paste("//Author[",i,"]/LastName")
+  dd <- xpathSApply(xmlObj, "count(//LastName)")
+  node <- xmlNode(q)
+  xmlValue(node)
+  lastnames <- xmlValue(node, q)
+  print(length(lastnames))
   #print(i)
+  #print(lastnames)
 }
-print(abs_list[1])
-t#ype(abstract)
+# lastnames <- xpathSApply(xmlObj, "//Author/LastName")
+# initials <- xpathSApply(xmlObj, "count(//Author/Initials)")
+# affiliations <- xpathSApply(xmlObj, "count(//Author/Affiliation)")
+# print(initials)
+# print(affiliations)
+
 ```
 
