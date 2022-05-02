@@ -6,8 +6,8 @@ knitr::include_graphics(img_url)
 ```
 ```{r}
 library(RSQLite)
-#fpath = "D:/Northeastern/DBMS/practicum2/"
-fpath = "~/Desktop/CS5200/assignments/"
+fpath = "D:/Northeastern/DBMS/practicum2/"
+#fpath = "~/Desktop/CS5200/assignments/"
 dbfile = "part1.sqlite"
 
 dbcon <- dbConnect(RSQLite::SQLite(), paste0(fpath, dbfile))
@@ -71,7 +71,8 @@ FOREIGN KEY(articleId) REFERENCES Article(pmid));
 ```{r}
 library(XML)
 
-path <- "~/Desktop/CS5200/"
+#path <- "~/Desktop/CS5200/"
+path <- "D:/Northeastern/DBMS/practicum2/"
 fn <- "pubmed_sample.xml"
 fpn = paste0(path, fn)
 
@@ -103,6 +104,7 @@ for(i in 1:length(articles)) {
   
   article_df[nrow(article_df) + 1,] = c(xmlValue(pmid_i),xmlValue(title_i), date_i, xmlValue(issn_i))
 }
+print(article_df)
 ```
 
 
@@ -136,4 +138,82 @@ for(i in 1:length(articles)) {
 journal_df <- unique(journal_df)
 print(journal_df)
 ```
+
+Author dataframe
+```{r}
+author_df <- data.frame(#cat=character(),
+                 firstName=character(),
+                 lastName=character(),
+                 initials=character(),
+                 affiliation=character())
+
+articles <- xpathSApply(xmlObj, "//PubmedArticle")
+#k <- 1
+
+for(i in 1:length(articles)) {
+  article_i <- xmlParseString(toString.XMLNode(articles[[i]]))
+  
+  authors <- xpathSApply(article_i, "//AuthorList/Author")
+  
+  #pmid_i <- xmlValue(xpathSApply(article_i, "//MedlineCitation/PMID"))
+  
+  for(j in 1: length(authors)){
+    author_j <- xmlParseString(toString.XMLNode(authors[[j]]))
+    firstName_j <- xmlValue(xpathSApply(author_j, "//Author/ForeName"))
+    lastName_j <- xmlValue(xpathSApply(author_j, "//Author/LastName"))
+    initials_j <- xmlValue(xpathSApply(author_j, "//Author/Initials"))
+    affiliation_j <- xmlValue(xpathSApply(author_j, "//Author/Affiliation"))
+    #cat_j <- cat(firstName_j, lastName_j)
+    if(is.list(affiliation_j)){
+      affiliation_j <- "NA"
+    }
+    # else{
+    #   affiliation_j <- xmlValue(affiliation_j)
+    # }
+    #print(xmlValue(affiliation_j))
+    # author_df[nrow(author_df) + 1,] = c(k, xmlValue(firstName_j),xmlValue(lastName_j), xmlValue(initials_j),  xmlValue(affiliation_j))
+    author_df[nrow(author_df) + 1,] = c(firstName_j, lastName_j, initials_j, affiliation_j)
+    #k <- k + 1
+  }
+  
+  # xml_date_i <- xmlParseString(toString.XMLNode(xpathSApply(article_i, "//Article/Journal/PubDate")))
+  # year_i <- xpathSApply(xml_date_i, "//Year")
+  # month_i <- xpathSApply(xml_date_i, "//Month")
+  # day_i <- xpathSApply(xml_date_i, "//Day")
+  # date_i <- paste(xmlValue(month_i), xmlValue(day_i), xmlValue(year_i), sep="-")
+}
+print(author_df)
+#author_df <- unique(author_df)
+author_df <- author_df[!duplicated(author_df[,c('firstName', 'lastName', 'initials')]),]
+author_df$id <- 1:nrow(author_df)
+print(author_df)
+#nrow(author_df[!duplicated(author_df[,c('firstName', 'lastName', 'initials')]),])
+```
+```{r}
+authorList_df <- data.frame(id=integer(),
+                 articleId=character(),
+                 authorId=integer())
+
+articles <- xpathSApply(xmlObj, "//PubmedArticle")
+
+for(i in 1:length(articles)) {
+  article_i <- xmlParseString(toString.XMLNode(articles[[i]]))
+  authors <- xpathSApply(article_i, "//AuthorList/Author")
+  pmid_i <- xpathSApply(article_i, "//MedlineCitation/PMID")
+  
+  for(j in 1: length(authors)) {
+    firstName_j <- xmlValue(xpathSApply(author_j, "//Author/ForeName"))
+    lastName_j <- xmlValue(xpathSApply(author_j, "//Author/LastName"))
+    initials_j <- xmlValue(xpathSApply(author_j, "//Author/Initials"))
+    
+    for(k in 1:length(author_df)) {
+      if(firstName_j==author_df[k, "firstName"] & lastName_j==author_df[k, "lastName"] & initials_j==author_df[k, "initials"]) {
+        
+      }
+    }
+  }
+}
+print(authorList_df)
+```
+
 
