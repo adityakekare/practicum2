@@ -220,13 +220,4 @@ dbWriteTable(dbcon, name="AuthorList", value = authorList_df, append = TRUE, row
 ```{sql connection=dbcon}
 SELECT * FROM AuthorList;
 ```
-```{sql connection=dbcon}
-SELECT * FROM Journal;
-```
-```{sql connection=dbcon}
-SELECT * FROM Author;
-```
-```{sql connection=dbcon}
-SELECT * FROM Article;
-```
 
