@@ -1,21 +1,33 @@
-Practicum 2:
-Part 1
+---
+title: "Practicum 2 part 1"
+output: html_notebook
+---
+
+Team members:
+Aditya Kekare (kekare.a@northeastern.edu) - 002135512
+Rushikesh Mokashi (mokashi.r@northeastern.edu) - 001098615
+
+1.3 ERD Schema
 ```{r}
-img_url <- "https://i.imgur.com/BYvwDan.jpeg"
+img_url <- "https://i.imgur.com/G6K9qqF.png"
 knitr::include_graphics(img_url)
 ```
 ```{r}
 library(RSQLite)
-fpath = "D:/Northeastern/DBMS/practicum2/"
-#fpath = "~/Desktop/CS5200/assignments/"
 dbfile = "part1.sqlite"
 
-dbcon <- dbConnect(RSQLite::SQLite(), paste0(fpath, dbfile))
+dbcon <- dbConnect(RSQLite::SQLite(), dbfile)
+
+library(XML)
+fn <- "pubmed_sample.xml"
+xmlObj <- xmlParse(fn)
 ```
 
 ```{sql connection=dbcon}
 PRAGMA foreign_keys = ON
 ```
+
+1.4 Creating Tables 
 ```{sql connection=dbcon}
 DROP TABLE IF EXISTS Article;
 ```
@@ -34,7 +46,7 @@ DROP TABLE IF EXISTS AuthorList;
 
 ```{sql connection=dbcon}
 CREATE TABLE IF NOT EXISTS Article(
-pmid VARCHAR(20), 
+pmid VARCHAR(20) PRIMARY KEY, 
 Title VARCHAR(255),
 dateCreated TEXT,
 issn VARCHAR(255)
@@ -69,18 +81,14 @@ FOREIGN KEY(authorId) REFERENCES Author(id),
 FOREIGN KEY(articleId) REFERENCES Article(pmid));
 ```
 
-```{r}
-library(XML)
+1.5 
+Loading data from xml into dataframes and then populating tables
 
-#path <- "~/Desktop/CS5200/"
-path <- "D:/Northeastern/DBMS/practicum2/"
-fn <- "pubmed_sample.xml"
-fpn = paste0(path, fn)
 
-xmlObj <- xmlParse(fpn)
-```
+Article Dataframe fill from XML
 
-Article Dataframe fill
+To handle the date, we have chosen to represent it as %Y-%M-$D format for DateCreated. We have chosen to do so, as it
+makes processing dates easier in Part 2 of data warehousing.
 ```{r}
 article_df <- data.frame(PMID=character(),
                  Title=character(),
@@ -101,14 +109,16 @@ for(i in 1:length(articles)) {
   month_i <- xpathSApply(xml_date_i, "//Month")
   day_i <- xpathSApply(xml_date_i, "//Day")
   
-  date_i <- paste(xmlValue(month_i), xmlValue(day_i), xmlValue(year_i), sep="-")
+  date_i <- paste(xmlValue(year_i), xmlValue(month_i), xmlValue(day_i), sep="-")
   
   article_df[nrow(article_df) + 1,] = c(xmlValue(pmid_i),xmlValue(title_i), date_i, xmlValue(issn_i))
 }
-print(article_df)
 ```
 
-Journal Dataframe fill
+Journal Dataframe fill from XML
+
+To handle PubDate we chose just to keep the year, as we observed that all dates have atleast the year field present.
+Month and day were missing from some entries in the XML, so we decided to not keep those. 
 ```{r}
 journal_df <- data.frame(issn=character(),
                  volume=integer(),
@@ -133,16 +143,14 @@ for(i in 1:length(articles)) {
     xml_date_i <- xmlValue(xpathSApply(article_i, "//Article/Journal/JournalIssue/PubDate/MedlineDate"))
     year_i <- substring(xml_date_i, 1, 4)
   }
- # print(year_i)
-  
+
   journal_df[nrow(journal_df) + 1,] = c( xmlValue(issn_i),xmlValue(volume_i), xmlValue(issue_i),  xmlValue(title_i), year_i)
 }
 journal_df <- unique(journal_df)
 journal_df$id <- 1:nrow(journal_df)
-print(journal_df)
 ```
 
-Author dataframe
+Author dataframe Fill from XML
 ```{r}
 author_df <- data.frame(firstName=character(),
                  lastName=character(),
@@ -173,6 +181,7 @@ author_df$id <- 1:nrow(author_df)
 author_df$id <- as.numeric(author_df$id)
 ```
 
+AuthorList dataframe fill from XML
 ```{r}
 authorList_df <- data.frame(pmid=character(),
                  authorId=integer())
@@ -203,6 +212,7 @@ for(i in 1:length(articles)) {
 authorList_df$authorId <- as.numeric(authorList_df$authorId)
 ```
 
+Checking Dataframes
 ```{r}
 print(article_df)
 print(journal_df)
@@ -210,6 +220,7 @@ print(author_df)
 print(authorList_df)
 ```
 
+Writing Dataframes to the database
 ```{r}
 dbWriteTable(dbcon, name="Journal", value = journal_df, append = TRUE, row.names = FALSE)
 dbWriteTable(dbcon, name="Author", value = author_df, append = TRUE, row.names = FALSE)
@@ -217,7 +228,21 @@ dbWriteTable(dbcon, name="Article", value = article_df, append = TRUE, row.names
 dbWriteTable(dbcon, name="AuthorList", value = authorList_df, append = TRUE, row.names = FALSE)
 ```
 
+Checking data inside tables 
+
 ```{sql connection=dbcon}
 SELECT * FROM AuthorList;
+```
+
+```{sql connection=dbcon}
+SELECT * FROM Journal;
+```
+
+```{sql connection=dbcon}
+SELECT * FROM Author;
+```
+
+```{sql connection=dbcon}
+SELECT * FROM Article;
 ```
 

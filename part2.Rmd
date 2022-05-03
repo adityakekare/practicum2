@@ -1,0 +1,131 @@
+---
+title: "Practicum 2 part 2,3"
+output: html_notebook
+---
+
+Team members:
+Aditya Kekare (kekare.a@northeastern.edu) - 002135512
+Rushikesh Mokashi (mokashi.r@northeastern.edu) - 001098615
+
+```{r}
+library(RMySQL)
+
+db_user <- 'root'
+db_password <- 'root'
+db_name <- 'Practicum2'
+db_host <- 'localhost' 
+db_port <- 3306
+dbcon_mysql <-  dbConnect(MySQL(), user = db_user, password = db_password,
+                 dbname = db_name, host = db_host, port = db_port)
+
+library(RSQLite)
+dbfile = "part1.sqlite"
+
+dbcon_sqlite <- dbConnect(RSQLite::SQLite(), dbfile)
+
+library(XML)
+fn <- "pubmed_sample.xml"
+xmlObj <- xmlParse(fn)
+```
+
+```{sql connection=dbcon_mysql}
+CREATE DATABASE IF NOT EXISTS Practicum2;
+```
+
+```{sql connection=dbcon_mysql}
+USE Practicum2;
+```
+
+
+
+2 Creating Dimension and Fact tables
+```{sql connection=dbcon_mysql}
+DROP TABLE IF EXISTS AuthorFact;
+```
+
+```{sql connection=dbcon_mysql}
+DROP TABLE IF EXISTS ArticleDimension;
+```
+
+```{sql connection=dbcon_mysql}
+CREATE TABLE IF NOT EXISTS ArticleDimension (
+pmid VARCHAR(20) PRIMARY KEY,
+title VARCHAR(225),
+date_created VARCHAR(30),
+issn VARCHAR(255)
+);
+```
+
+```{sql connection=dbcon_mysql}
+CREATE TABLE IF NOT EXISTS AuthorFact ( 
+id INT PRIMARY KEY, 
+articleid VARCHAR(20),
+author_name VARCHAR(255),
+num_articles INT,
+avg_articles_year DOUBLE,
+FOREIGN KEY(articleid) REFERENCES ArticleDimension(pmid)
+);
+```
+
+
+
+Loading data to be added to AuthorFact inside author_df dataframe
+```{r}
+query <- "
+SELECT 
+  Author.id,
+  Article.pmid as articleid,
+  (firstname || ' ' || lastname) AS author_name,
+  COUNT(Article.pmid) AS num_articles,
+  ROUND(COUNT(Article.pmid) * 1.0 / (
+    SELECT COUNT(*)
+    FROM
+      (SELECT DISTINCT (SUBSTR(Article.dateCreated, 1, 4)) FROM Article)
+  ),2) AS avg_articles_year
+FROM Author
+INNER JOIN AuthorList ON Author.id = AuthorList.authorId
+INNER JOIN Article ON AuthorList.pmid = Article.pmid
+GROUP BY Author.id
+"
+author_df <- dbGetQuery(dbcon_sqlite, query)
+print(author_df)
+```
+
+Loading data to be added to ArticleDimension inside article_df dataframe
+```{r}
+query <- "
+SELECT pmid,
+  Title as title,
+  dateCreated as date_created,
+  issn
+FROM 
+  Article;
+"
+article_df <- dbGetQuery(dbcon_sqlite, query)
+print(article_df)
+```
+
+Writing the dataframes into the database.
+```{r}
+dbExecute(dbcon_mysql, "SET GLOBAL local_infile = TRUE;")
+dbWriteTable(dbcon_mysql, name="articledimension", value = article_df, append = TRUE, row.names = FALSE)
+dbWriteTable(dbcon_mysql, name="authorfact", value = author_df, append = TRUE, row.names = FALSE)
+```
+
+
+Checking the contents of the tables.
+```{sql connection=dbcon_mysql}
+SELECT * FROM AuthorFact;
+```
+
+```{sql connection=dbcon_mysql}
+SELECT * FROM ArticleDimension;
+```
+
+Query to check top 10 authors according to the number of articles.
+```{sql connection=dbcon_mysql}
+SELECT id,author_name AS author, num_articles AS 'Number of Articles'
+FROM AuthorFact
+ORDER BY num_articles DESC
+LIMIT 10;
+```
