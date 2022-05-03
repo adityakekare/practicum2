@@ -6,8 +6,8 @@ knitr::include_graphics(img_url)
 ```
 ```{r}
 library(RSQLite)
-#fpath = "D:/Northeastern/DBMS/practicum2/"
-fpath = "~/Desktop/CS5200/assignments/"
+fpath = "D:/Northeastern/DBMS/practicum2/"
+#fpath = "~/Desktop/CS5200/assignments/"
 dbfile = "part1.sqlite"
 
 dbcon <- dbConnect(RSQLite::SQLite(), paste0(fpath, dbfile))
@@ -72,8 +72,8 @@ FOREIGN KEY(articleId) REFERENCES Article(pmid));
 ```{r}
 library(XML)
 
-path <- "~/Desktop/CS5200/"
-#path <- "D:/Northeastern/DBMS/practicum2/"
+#path <- "~/Desktop/CS5200/"
+path <- "D:/Northeastern/DBMS/practicum2/"
 fn <- "pubmed_sample.xml"
 fpn = paste0(path, fn)
 
@@ -219,5 +219,14 @@ dbWriteTable(dbcon, name="AuthorList", value = authorList_df, append = TRUE, row
 
 ```{sql connection=dbcon}
 SELECT * FROM AuthorList;
+```
+```{sql connection=dbcon}
+SELECT * FROM Journal;
+```
+```{sql connection=dbcon}
+SELECT * FROM Author;
+```
+```{sql connection=dbcon}
+SELECT * FROM Article;
 ```
 
