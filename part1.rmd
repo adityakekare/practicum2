@@ -222,10 +222,10 @@ print(authorList_df)
 
 Writing Dataframes to the database
 ```{r}
-dbWriteTable(dbcon, name="Journal", value = journal_df, append = TRUE, row.names = FALSE)
-dbWriteTable(dbcon, name="Author", value = author_df, append = TRUE, row.names = FALSE)
-dbWriteTable(dbcon, name="Article", value = article_df, append = TRUE, row.names = FALSE)
-dbWriteTable(dbcon, name="AuthorList", value = authorList_df, append = TRUE, row.names = FALSE)
+dbWriteTable(dbcon, name="journal", value = journal_df, append = TRUE, row.names = FALSE)
+dbWriteTable(dbcon, name="author", value = author_df, append = TRUE, row.names = FALSE)
+dbWriteTable(dbcon, name="article", value = article_df, append = TRUE, row.names = FALSE)
+dbWriteTable(dbcon, name="authorlist", value = authorList_df, append = TRUE, row.names = FALSE)
 ```
 
 Checking data inside tables 

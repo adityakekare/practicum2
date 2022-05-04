@@ -58,11 +58,12 @@ issn VARCHAR(255)
 
 ```{sql connection=dbcon_mysql}
 CREATE TABLE IF NOT EXISTS AuthorFact ( 
-id INT PRIMARY KEY, 
+id INT, 
 articleid VARCHAR(20),
 author_name VARCHAR(255),
 num_articles INT,
 avg_articles_year DOUBLE,
+PRIMARY KEY(id, articleid),
 FOREIGN KEY(articleid) REFERENCES ArticleDimension(pmid)
 );
 ```
@@ -71,11 +72,20 @@ FOREIGN KEY(articleid) REFERENCES ArticleDimension(pmid)
 
 Loading data to be added to AuthorFact inside author_df dataframe
 ```{r}
+query1 <- "
+SELECT 
+  AuthorList.authorId,
+  AuthorList.pmid as articleid,
+  (Author.firstname || ' ' || Author.lastname) AS author_name
+FROM AuthorList
+LEFT JOIN Author ON AuthorList.authorId = Author.id
+"
+
+#  Article.pmid as articleid,
+#   (firstname || ' ' || lastname) AS author_name,
 query <- "
 SELECT 
-  Author.id,
-  Article.pmid as articleid,
-  (firstname || ' ' || lastname) AS author_name,
+  Author.id as authorId,
   COUNT(Article.pmid) AS num_articles,
   ROUND(COUNT(Article.pmid) * 1.0 / (
     SELECT COUNT(*)
@@ -87,8 +97,13 @@ INNER JOIN AuthorList ON Author.id = AuthorList.authorId
 INNER JOIN Article ON AuthorList.pmid = Article.pmid
 GROUP BY Author.id
 "
+first_df <- dbGetQuery(dbcon_sqlite, query1)
 author_df <- dbGetQuery(dbcon_sqlite, query)
+final_df <- merge(first_df, author_df, by=c("authorId"))
+print(first_df)
 print(author_df)
+colnames(final_df)[1] <- "id"
+print(final_df)
 ```
 
 Loading data to be added to ArticleDimension inside article_df dataframe
@@ -109,7 +124,7 @@ Writing the dataframes into the database.
 ```{r}
 dbExecute(dbcon_mysql, "SET GLOBAL local_infile = TRUE;")
 dbWriteTable(dbcon_mysql, name="articledimension", value = article_df, append = TRUE, row.names = FALSE)
-dbWriteTable(dbcon_mysql, name="authorfact", value = author_df, append = TRUE, row.names = FALSE)
+dbWriteTable(dbcon_mysql, name="authorfact", value = final_df, append = TRUE, row.names = FALSE)
 ```
 
 
@@ -124,7 +139,7 @@ SELECT * FROM ArticleDimension;
 
 Query to check top 10 authors according to the number of articles.
 ```{sql connection=dbcon_mysql}
-SELECT id,author_name AS author, num_articles AS 'Number of Articles'
+SELECT DISTINCT id,author_name AS author, num_articles AS 'Number of Articles'
 FROM AuthorFact
 ORDER BY num_articles DESC
 LIMIT 10;
