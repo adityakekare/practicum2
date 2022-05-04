@@ -29,7 +29,7 @@ PRAGMA foreign_keys = ON
 
 1.4 Creating Tables 
 ```{sql connection=dbcon}
-DROP TABLE IF EXISTS Article;
+DROP TABLE IF EXISTS AuthorList;
 ```
 
 ```{sql connection=dbcon}
@@ -37,11 +37,11 @@ DROP TABLE IF EXISTS Journal;
 ```
 
 ```{sql connection=dbcon}
-DROP TABLE IF EXISTS Author;
+DROP TABLE IF EXISTS Article;
 ```
 
 ```{sql connection=dbcon}
-DROP TABLE IF EXISTS AuthorList;
+DROP TABLE IF EXISTS Author;
 ```
 
 ```{sql connection=dbcon}
@@ -74,11 +74,11 @@ affiliation VARCHAR(255));
 
 ```{sql connection=dbcon}
 CREATE TABLE IF NOT EXISTS AuthorList(
-id INT PRIMARY KEY,
 authorId INT,
 pmid VARCHAR(20),
+PRIMARY KEY(authorId, pmid),
 FOREIGN KEY(authorId) REFERENCES Author(id),
-FOREIGN KEY(articleId) REFERENCES Article(pmid));
+FOREIGN KEY(pmid) REFERENCES Article(pmid));
 ```
 
 1.5 
